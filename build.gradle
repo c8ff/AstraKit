@@ -4,7 +4,7 @@ plugins {
     id 'idea'
 }
 
-var lwjglVersion = "3.3.2"
+var lwjglVersion = "3.3.3"
 var lwjglNatives = "natives-windows"
 
 group = 'dev.seeight'
@@ -62,6 +62,8 @@ dependencies {
 
     implementation "com.google.code.gson:gson:2.10.1"
     implementation "org.jetbrains:annotations:24.0.1"
+    implementation "commons-io:commons-io:2.13.0"
+    implementation "org.joml:joml:1.10.5"
 }
 
 java {
