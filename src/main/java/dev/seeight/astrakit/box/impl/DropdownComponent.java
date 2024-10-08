@@ -5,15 +5,18 @@ import dev.seeight.astrakit.box.ComponentBox;
 import dev.seeight.common.lwjgl.font.IFont;
 import dev.seeight.common.lwjgl.fontrenderer.IFontRenderer;
 import dev.seeight.renderer.renderer.Texture;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 	private final Texture dropdownTexture;
 
-	private final T[] options;
+	private @NotNull T @NotNull [] options;
 	private T selected;
 
 	public final IFontRenderer fontRenderer;
@@ -171,4 +174,22 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 	public T getSelected() {
 		return selected;
 	}
+
+	@Contract("_ -> this")
+	@NotNull
+	public DropdownComponent<T> setOptions(@NotNull T @NotNull [] options) {
+		this.options = options;
+
+		for (T option : options) {
+			if (Objects.equals(selected, option)) {
+				return this;
+			}
+		}
+
+		// In case the selected option isn't on the options list
+		// TODO: This might not be desired
+		this.setSelected(options[0]);
+		return this;
+	}
+
 }
