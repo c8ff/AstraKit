@@ -96,6 +96,10 @@ public class BoxBuilder {
 	}
 
 	public WrappedTextBox wrapped(String text) {
+		return this.wrapped(text, this.font);
+	}
+
+	public WrappedTextBox wrapped(String text, IFont font) {
 		return new WrappedTextBox(context, fontRenderer, font, () -> text);
 	}
 
