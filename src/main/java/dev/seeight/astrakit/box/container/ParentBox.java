@@ -5,6 +5,8 @@ import dev.seeight.astrakit.box.*;
 import dev.seeight.astrakit.box.impl.Dropdown;
 import dev.seeight.astrakit.box.layout.Layout;
 import dev.seeight.astrakit.box.layout.Sizing;
+import dev.seeight.astrakit.box.util.ComponentColor;
+import dev.seeight.astrakit.box.util.Border;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
