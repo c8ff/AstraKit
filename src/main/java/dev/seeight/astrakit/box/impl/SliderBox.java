@@ -1,5 +1,6 @@
 package dev.seeight.astrakit.box.impl;
 
+import dev.seeight.astrakit.box.Component;
 import dev.seeight.astrakit.box.UIBoxContext;
 import dev.seeight.astrakit.box.ComponentBox;
 import dev.seeight.common.lwjgl.font.IFont;
@@ -13,7 +14,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 
-public class SliderBox extends ComponentBox {
+public class SliderBox extends ComponentBox implements PrioritizedRenderComponent {
 	protected final Texture smallTriangleTexture;
 	protected final Texture markerTexture;
 
@@ -97,6 +98,21 @@ public class SliderBox extends ComponentBox {
 
 		// Marker
 		this.renderer.texRect2f(marker, markerX, markerY, markerX + marker.getWidth(), markerY + marker.getHeight());
+	}
+
+	@Override
+	public void renderOver(float offsetX, float offsetY, float alpha) {
+		if (isOutsideView(offsetX, offsetY)) return;
+
+		float x = offsetX + this.getX();
+		float y = offsetY + this.getY();
+
+		double min = this.value.min.doubleValue();
+		double max = this.value.max.doubleValue();
+		double val = this.value.value.doubleValue();
+		double progress = (val - min) / (max - min);
+
+		float progressiveWidth = (float) (this.getWidth() * progress);
 
 		// Label for when the value is changed.
 		if (this.isFocused() || this.labelAlpha > 0.1F) {
