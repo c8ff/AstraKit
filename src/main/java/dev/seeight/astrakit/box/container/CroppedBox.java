@@ -18,6 +18,7 @@ public class CroppedBox extends ComponentBox implements PrioritizedRenderCompone
 	protected boolean compensateRenderOffset;
 	protected float px;
 	protected float py;
+	protected float pScrollY;
 	protected float offsetX;
 	protected float offsetY;
 
@@ -78,7 +79,8 @@ public class CroppedBox extends ComponentBox implements PrioritizedRenderCompone
 		this.offsetX = offsetX;
 		this.offsetY = offsetY;
 		this.px = x;
-		this.py = py;
+		this.py = y;
+		this.pScrollY = py;
 
 		if (this.isOutsideView(offsetX, offsetY)) return;
 
@@ -107,8 +109,8 @@ public class CroppedBox extends ComponentBox implements PrioritizedRenderCompone
 		}
 
 		if (this.i.boxBoundView()) {
-			this.renderer.color(1, 0, 0, alpha * 0.5F);
-			this.renderer.hollowRect2f(x, y, this.getWidth(), this.getHeight(), 1F);
+			this.renderer.color(isFocused() ? 0.5F : 1, 0, 0, alpha * 0.5F);
+			this.renderer.hollowRect2f(x + 1, y + 1, x - 1 + this.getWidth(), y - 1 + this.getHeight(), 1F);
 		}
 	}
 
@@ -137,9 +139,9 @@ public class CroppedBox extends ComponentBox implements PrioritizedRenderCompone
 				return true;
 			}
 
-			if (!isInside(x - this.offsetX, y - this.offsetY)) return false;
+			if (!isInside(x - this.offsetX, y - this.offsetY) && !this.isFocused()) return false;
 		} else {
-			if (!isInside(x, y)) return false;
+			if (!isInside(x, y) && !this.isFocused()) return false;
 
 			// Scroll
 			if (button == GLFW.GLFW_MOUSE_BUTTON_3 && action == GLFW.GLFW_PRESS) {
@@ -153,17 +155,20 @@ public class CroppedBox extends ComponentBox implements PrioritizedRenderCompone
 
 		if (this.compensateRenderOffset) {
 			x -= this.px;
-			y -= this.py;
+			y -= this.pScrollY;
 		} else {
 			if (axis == Axis.VERTICAL) {
 				y -= this.scroll.get();
 			} else {
 				x -= this.scroll.get();
 			}
+
+			x -= this.getX();
+			y -= this.getY();
 		}
 
-		boolean b = child.mouseEvent(button, action, mods, x - this.getX(), y - this.getY());
-		child.setFocused(b);
+		boolean b = child.mouseEvent(button, action, mods, x, y);
+		this.setFocused(b);
 		return b;
 	}
 
@@ -179,8 +184,9 @@ public class CroppedBox extends ComponentBox implements PrioritizedRenderCompone
 
 	@Override
 	public boolean scrollEvent(double x, double y) {
-		child.scrollEvent(x, y);
-		scroll.onScrollEvent(axis == Axis.HORIZONTAL ? x : y);
+		if (!child.scrollEvent(x, y)) {
+			scroll.onScrollEvent(axis == Axis.HORIZONTAL ? x : y);
+		}
 		return true;
 	}
 
@@ -191,7 +197,8 @@ public class CroppedBox extends ComponentBox implements PrioritizedRenderCompone
 
 	@Override
 	public void cursorPosition(double x, double y) {
-		child.cursorPosition(x - this.getX() - child.getX(), y - this.getY() - child.getY());
+		// for some reason it doesn't work when including the parent position.
+		child.cursorPosition(x - child.getX(), y - child.getY());
 	}
 
 	@Override
@@ -207,6 +214,8 @@ public class CroppedBox extends ComponentBox implements PrioritizedRenderCompone
 		} else {
 			child.setWidth(width);
 		}
+
+		child.applyLayout();
 	}
 
 	@Override
@@ -222,6 +231,14 @@ public class CroppedBox extends ComponentBox implements PrioritizedRenderCompone
 		} else {
 			child.setHeight(height);
 		}
+
+		child.applyLayout();
+	}
+
+	@Override
+	public void setFocused(boolean focused) {
+		super.setFocused(focused);
+		child.setFocused(focused);
 	}
 
 	public Scroll2 getScroll() {
@@ -234,7 +251,7 @@ public class CroppedBox extends ComponentBox implements PrioritizedRenderCompone
 
 	protected void activateCropping() {
 		GL11.glEnable(GL11.GL_SCISSOR_TEST);
-		GL11.glScissor((int) x, (int) (this.i.getWindowHeight() - y - this.getHeight()), (int) this.getWidth(), (int) this.getHeight());
+		GL11.glScissor((int) px, (int) (this.i.getWindowHeight() - py - this.getHeight()), (int) this.getWidth(), (int) this.getHeight());
 	}
 
 	protected void disableCropping() {

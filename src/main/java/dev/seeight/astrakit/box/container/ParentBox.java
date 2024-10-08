@@ -275,7 +275,7 @@ public class ParentBox extends ComponentBox implements PrioritizedRenderComponen
 			for (var component : this.children) {
 				if (component.isFocused() && component instanceof Dropdown s) {
 					s.mouseEventOver(button, action, mx, my);
-					return true;
+					return component.isFocused();
 				}
 			}
 
@@ -284,19 +284,18 @@ public class ParentBox extends ComponentBox implements PrioritizedRenderComponen
 					if (component.isFocused()) {
 						if (!component.mouseEvent(button, action, mods, mx, my)) {
 							component.setFocused(false);
+							return false;
+						} else {
+							return true;
 						}
-						return false;
 					}
 				}
-			}
+			} else {
+				for (var component : this.children) {
+					if (!component.mouseEvent(button, action, mods, mx, my)) continue;
 
-			for (var component : this.children) {
-				component.setFocused(false);
-			}
-
-			for (var component : this.children) {
-				if (component.mouseEvent(button, action, mods, mx, my)) {
 					component.setFocused(true);
+					for (Component child : this.children) if (child != component && child.isFocused()) child.setFocused(false);
 					return true;
 				}
 			}
@@ -316,6 +315,7 @@ public class ParentBox extends ComponentBox implements PrioritizedRenderComponen
 			}
 		}
 
+		for (Component child : this.children) if (child.isFocused()) child.setFocused(false);
 		return false;
 	}
 
@@ -356,25 +356,21 @@ public class ParentBox extends ComponentBox implements PrioritizedRenderComponen
 
 	@Override
 	public boolean scrollEvent(double x, double y) {
+		for (var component : this.children) {
+			if (component.isFocused() && component instanceof Dropdown s) {
+				s.scrollOver(x, y);
+				return true;
+			}
+		}
+
 		if (this.forceFocus != null) {
 			return this.forceFocus.scrollEvent(x, y);
 		}
 
-		double mx = this.mx + this.getX();
-		double my = this.my + this.getY();
-
-		if (this.compensateRenderOffset) {
-			mx -= this.px;
-			my -= this.py;
-		}
-
-		for (Component child : this.children) {
-			child.setFocused(false);
-		}
-
 		for (var box : this.children) {
-			if (box.isInside(mx, my) && box.scrollEvent(x, y)) {
+			if (box.scrollEvent(x, y)) {
 				box.setFocused(true);
+				for (Component child : this.children) if (child != box && child.isFocused()) child.setFocused(false);
 				return true;
 			}
 		}
@@ -434,6 +430,19 @@ public class ParentBox extends ComponentBox implements PrioritizedRenderComponen
 		super.setHeight(height);
 		if (!this.children.isEmpty())
 			this.layout.onResize(this, 0, height);
+	}
+
+	@Override
+	public void setFocused(boolean focused) {
+		super.setFocused(focused);
+
+		if (!focused) {
+			for (Component child : this.children) {
+				if (child.isFocused()) {
+					child.setFocused(false);
+				}
+			}
+		}
 	}
 
 	public List<Component> children() {
