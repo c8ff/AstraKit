@@ -2,13 +2,14 @@ package dev.seeight.astrakit.box.container;
 
 import dev.seeight.astrakit.box.ComponentBox;
 import dev.seeight.astrakit.box.UIBoxContext;
+import dev.seeight.astrakit.box.impl.PrioritizedRenderComponent;
 import dev.seeight.common.lwjgl.font.IFont;
 import dev.seeight.common.lwjgl.fontrenderer.IFontRenderer;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
 
-public class TabBox extends ComponentBox {
+public class TabBox extends ComponentBox implements PrioritizedRenderComponent {
 	private final List<Tab> tabs;
 
 	private final IFont font;
@@ -151,6 +152,13 @@ public class TabBox extends ComponentBox {
 		super.setHeight(height);
 		for (Tab tab : this.tabs) {
 			tab.box.setHeight(height - this.titlesHeight);
+		}
+	}
+
+	@Override
+	public void renderOver(float offsetX, float offsetY, float alpha) {
+		if (this.selected.box instanceof ParentBox b) {
+			b.renderOver(offsetX, offsetY, alpha);
 		}
 	}
 

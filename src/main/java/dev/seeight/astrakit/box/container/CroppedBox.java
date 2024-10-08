@@ -2,6 +2,7 @@ package dev.seeight.astrakit.box.container;
 
 import dev.seeight.astrakit.box.ComponentBox;
 import dev.seeight.astrakit.box.UIBoxContext;
+import dev.seeight.astrakit.box.impl.PrioritizedRenderComponent;
 import dev.seeight.astrakit.box.layout.Axis;
 import dev.seeight.astrakit.box.layout.Sizing;
 import dev.seeight.astrakit.box.util.Scroll2;
@@ -9,8 +10,8 @@ import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 
-public class CroppedBox extends ComponentBox {
-	private final ParentBox child;
+public class CroppedBox extends ComponentBox implements PrioritizedRenderComponent {
+	protected final ParentBox child;
 	private final Axis axis;
 	private final Scroll2 scroll;
 
@@ -109,6 +110,11 @@ public class CroppedBox extends ComponentBox {
 			this.renderer.color(1, 0, 0, alpha * 0.5F);
 			this.renderer.hollowRect2f(x, y, this.getWidth(), this.getHeight(), 1F);
 		}
+	}
+
+	@Override
+	public void renderOver(float offsetX, float offsetY, float alpha) {
+		this.child.renderOver(offsetX + this.getX(), offsetY + this.getY(), alpha);
 	}
 
 	@Override
