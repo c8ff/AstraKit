@@ -54,6 +54,9 @@ public class TextFieldComponent extends ComponentBox {
 
 	protected String emptyText;
 
+	@Nullable
+	protected TypingFilter typingFilter = null;
+
 	private final IFont font;
 	private final IFontRenderer fontRenderer;
 
@@ -548,7 +551,7 @@ public class TextFieldComponent extends ComponentBox {
 	}
 
 	protected boolean isCharacterValid(char character) {
-		return !Character.isISOControl(character);
+		return !Character.isISOControl(character) && (typingFilter == null || typingFilter.isCharacterValid(character, this));
 	}
 
 	public int getHeadIndex() {
@@ -571,6 +574,11 @@ public class TextFieldComponent extends ComponentBox {
 		return this.characters.size();
 	}
 
+	public TextFieldComponent setTypingFilter(TypingFilter typingFilter) {
+		this.typingFilter = typingFilter;
+		return this;
+	}
+
 	public static class Selection {
 		public int start;
 		public int end;
@@ -579,5 +587,9 @@ public class TextFieldComponent extends ComponentBox {
 		public Selection() {
 
 		}
+	}
+
+	public interface TypingFilter {
+		boolean isCharacterValid(int codepoint, TextFieldComponent field);
 	}
 }
