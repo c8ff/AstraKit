@@ -363,7 +363,12 @@ public class TextFieldComponent extends ComponentBox {
 		// Cursor
 		if (this.isFocused()) {
 			float v = chars.length == 0 ? 0 : this.fontRenderer.getWidthFloat(font, chars, 0, this.headIndex);
-			this.cursorPosX = Scroll2.animate(this.cursorPosX, v, this.i.getDeltaTime() * 150F);
+			if (Float.isNaN(this.cursorPosX) || Float.isInfinite(this.cursorPosX)) {
+				this.cursorPosX = v;
+			} else {
+				double speed = this.i.getDeltaTime() * 150F;
+				this.cursorPosX = Scroll2.animate(this.cursorPosX, v, Math.min(speed, 1));
+			}
 			float cursorXOffset = this.cursorPosX;
 			float cursorX = fontX + cursorXOffset;
 			double sin = this.cursorAnimation / 255F;
