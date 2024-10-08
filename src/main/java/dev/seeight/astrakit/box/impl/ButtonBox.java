@@ -4,6 +4,7 @@ import dev.seeight.astrakit.box.UIBoxContext;
 import dev.seeight.astrakit.box.ComponentBox;
 import dev.seeight.common.lwjgl.font.IFont;
 import dev.seeight.common.lwjgl.fontrenderer.IFontRenderer;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
@@ -14,6 +15,7 @@ public class ButtonBox extends ComponentBox {
 	public final float margin;
 	@Nullable
 	public Runnable click;
+	protected boolean disabled = false;
 
 	public ButtonBox(UIBoxContext i, IFont font, IFontRenderer fontRenderer, String text, float margin, @Nullable Runnable click) {
 		this(i, font, fontRenderer, text.toCharArray(), margin, click);
@@ -29,12 +31,16 @@ public class ButtonBox extends ComponentBox {
 	}
 
 	protected void renderBackground(float x, float y, float x2, float y2, float alpha) {
+		float m = this.disabled ? 0.25F : 1F;
+
+		float brightness;
 		if (!this.isFocused()) {
-			this.renderer.color(0.25, 0.25, 0.25, alpha);
+			brightness = 0.25F * m;
 		} else {
-			this.renderer.color(0.10, 0.10, 0.10, alpha);
+			brightness = 0.10F * m;
 		}
 
+		this.renderer.color(brightness, brightness, brightness, alpha);
 		this.renderer.rect2f(x, y, x2, y2);
 	}
 
@@ -50,7 +56,9 @@ public class ButtonBox extends ComponentBox {
 
 		this.renderBackground(x, y, x + this.getWidth(), y + this.getHeight(), alpha);
 
-		this.renderer.color(1, 1, 1, alpha);
+		float m = this.disabled ? 0.25F : 1F;
+
+		this.renderer.color(m, m, m, alpha);
 		this.fontRenderer.drawString(this.font, this.text, fontX, fontY);
 	}
 
@@ -63,6 +71,10 @@ public class ButtonBox extends ComponentBox {
 
 	@Override
 	public boolean mouseEvent(int button, int action, int mods, double x, double y) {
+		if (this.disabled) {
+			return false;
+		}
+
 		if (this.i.getMouser().isLeft(button) && action == GLFW.GLFW_RELEASE && this.isFocused()) {
 			if (isInside(x, y)) {
 				this.execute();
@@ -92,5 +104,11 @@ public class ButtonBox extends ComponentBox {
 		this.setMinHeight(this.font.getHeight() + this.margin * 2);
 		this.setWidth(this.getMinWidth());
 		this.setHeight(this.getMinHeight());
+	}
+
+	@Contract("_->this")
+	public ButtonBox setDisabled(boolean disabled) {
+		this.disabled = disabled;
+		return this;
 	}
 }
