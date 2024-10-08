@@ -3,6 +3,7 @@ package dev.seeight.astrakit.box.impl;
 import dev.seeight.astrakit.box.Component;
 import dev.seeight.astrakit.box.UIBoxContext;
 import dev.seeight.astrakit.box.ComponentBox;
+import dev.seeight.astrakit.box.layout.Sizing;
 import dev.seeight.common.lwjgl.font.IFont;
 import dev.seeight.common.lwjgl.fontrenderer.IFontRenderer;
 import dev.seeight.renderer.renderer.Texture;
@@ -60,6 +61,24 @@ public class SliderBox extends ComponentBox implements PrioritizedRenderComponen
 
 	public SliderBox setStopDragEvent(@Nullable DoubleConsumer stopDragEvent) {
 		this.stopDragEvent = stopDragEvent;
+		return this;
+	}
+
+	@Override
+	public SliderBox setSizing(@Nullable Sizing x, @Nullable Sizing y) {
+		super.setSizing(x, y);
+		return this;
+	}
+
+	@Override
+	public SliderBox setSizingX(@Nullable Sizing x) {
+		super.setSizingX(x);
+		return this;
+	}
+
+	@Override
+	public Component setSizingY(@Nullable Sizing y) {
+		super.setSizingY(y);
 		return this;
 	}
 
