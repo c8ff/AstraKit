@@ -2,9 +2,11 @@ package dev.seeight.astrakit.box.impl;
 
 import dev.seeight.astrakit.box.UIBoxContext;
 import dev.seeight.astrakit.box.ComponentBox;
+import dev.seeight.astrakit.box.util.Scroll2;
 import dev.seeight.common.lwjgl.font.IFont;
 import dev.seeight.common.lwjgl.fontrenderer.IFontRenderer;
 import dev.seeight.renderer.renderer.Texture;
+import dev.seeight.util.ListUtil;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
@@ -25,6 +27,12 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 	private Function<T, char[]> renderStringGet;
 
 	private Consumer<T> changeEvent;
+	private ChangeEvent<T> itemChangeEvent;
+
+	private boolean o_ignoreFirstClick = false;
+	private final int o_maxElementDisplay = 20;
+	private final Scroll2 o_scroll;
+	private T o_hovering;
 
 	@SafeVarargs
 	public DropdownComponent(UIBoxContext i, IFont font, IFontRenderer fontRenderer, float margin, int selected, T... options) {
@@ -52,6 +60,8 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 		this.setMinHeight(this.font.getHeight() + margin * 2);
 		this.setWidth(this.getMinWidth());
 		this.setHeight(this.getMinHeight());
+
+		this.o_scroll = new Scroll2(i);
 	}
 
 	public DropdownComponent<T> setRenderStringGet(Function<T, char[]> renderStringGet) {
@@ -59,8 +69,14 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 		return this;
 	}
 
+	@Deprecated
 	public DropdownComponent<T> setChangeEvent(Consumer<T> changeEvent) {
 		this.changeEvent = changeEvent;
+		return this;
+	}
+
+	public DropdownComponent<T> setItemChangeEvent(ChangeEvent<T> ev) {
+		this.itemChangeEvent = ev;
 		return this;
 	}
 
@@ -109,22 +125,36 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 
 	@Override
 	public boolean mouseEvent(int button, int action, int mods, double x, double y) {
-		return this.isInside(x, y) && action == GLFW.GLFW_PRESS;
+		boolean b = this.isInside(x, y) && action == GLFW.GLFW_PRESS;
+		if (b) o_ignoreFirstClick = true;
+		return b;
 	}
 
 	@Override
-	public void mouseEventOver(int button, int action, double x, double y) {
-		if (button == GLFW.GLFW_MOUSE_BUTTON_1 && action == GLFW.GLFW_PRESS) {
+	public void mouseEventOver(int button, int action, double cursorX, double cursorY) {
+		if (o_ignoreFirstClick && action == GLFW.GLFW_RELEASE) {
+			o_ignoreFirstClick = false;
+			return;
+		}
+
+		if (button == GLFW.GLFW_MOUSE_BUTTON_1 && action == GLFW.GLFW_RELEASE) {
 			float x0 = this.getX();
-			float y0 = this.getY() + this.getHeight();
+			float y0 = this.o_scroll.get();
 			float optionHeight = this.getHeight();
+			float maxHeight = optionHeight * Math.min(this.o_maxElementDisplay, this.options.length);
+			
+			cursorY -= this.getY() + this.getHeight();
 
 			for (T option : this.options) {
-				if (x0 < x && y0 < y && x0 + getWidth() > x && y0 + optionHeight > y) {
-					this.selected = option;
-					if (changeEvent != null)
-						changeEvent.accept(selected);
-					break;
+				if (y0 > maxHeight) break;
+
+				if (y0 >= 0) {
+					if (cursorX > x0 && cursorY > y0 &&
+						cursorX < x0 + getWidth() && cursorY < y0 + optionHeight
+					) {
+						setSelected(option);
+						break;
+					}
 				}
 
 				y0 += optionHeight;
@@ -135,13 +165,54 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 	}
 
 	@Override
+	public void cursorPosition(double x, double y) {
+		if (this.isFocused()) {
+			float x0 = 0;
+			float y0 = this.o_scroll.get();
+			float optionHeight = this.getHeight();
+
+			y -= this.getHeight();
+
+			for (T option : this.options) {
+				if (x0 < x && y0 < y && x0 + getWidth() > x && y0 + optionHeight > y) {
+					this.o_hovering = option;
+					break;
+				}
+
+				y0 += optionHeight;
+			}
+		} else {
+			this.o_hovering = null;
+		}
+	}
+
+	@Override
+	public void scrollOver(double x, double y) {
+		this.o_scroll.onScrollEvent(y);
+	}
+
+	private void setSelected(T selected) {
+		this.selected = selected;
+		if (changeEvent != null)
+			changeEvent.accept(this.selected);
+		if (itemChangeEvent != null)
+			itemChangeEvent.onDropdownChange(ListUtil.indexOf(this.options, this.selected), this.selected, this);
+	}
+
+	@Override
 	public void renderOver(float offsetX, float offsetY, float alpha) {
 		float x = (float) Math.floor(this.getX() + offsetX);
 		float y = (float) Math.floor(this.getY() + offsetY + this.getHeight());
 
 		float optionHeight = this.getHeight();
 		float width = this.getWidth();
-		float bgHeight = optionHeight * this.options.length;
+		float bgHeight = optionHeight * Math.min(this.options.length, this.o_maxElementDisplay);
+
+		float y2 = y + bgHeight;
+
+		this.o_scroll.update();
+		this.o_scroll.setMaxSize(bgHeight);
+		this.o_scroll.setSize(optionHeight * this.options.length);
 
 		this.renderOverBackground(alpha, x, y, width, bgHeight);
 
@@ -152,9 +223,22 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 		// Main text
 		this.renderer.color(1, 1, 1, alpha);
 
+		float oy = y + o_scroll.get();
 		for (T option : this.options) {
-			this.fontRenderer.drawString(this.font, getOptionStr(option), fontX, y + fontOffsetY);
-			y += optionHeight;
+			if (oy + optionHeight > y && oy <= y2) {
+				if (option == selected) {
+					this.renderer.color(0, 0, 0, alpha * 0.25F);
+					this.renderer.rect2f(x, oy, x + width, oy + optionHeight);
+					this.renderer.color(1, 1, 1, alpha);
+				} else if (option == this.o_hovering) {
+					this.renderer.color(1, 1, 1, alpha * 0.15F);
+					this.renderer.rect2f(x, oy, x + width, oy + optionHeight);
+					this.renderer.color(1, 1, 1, alpha);
+				}
+
+				this.fontRenderer.drawString(this.font, getOptionStr(option), fontX, oy + fontOffsetY);
+			}
+			oy += optionHeight;
 		}
 	}
 
@@ -192,4 +276,16 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 		return this;
 	}
 
+	@Override
+	public void setFocused(boolean focused) {
+		if (focused) {
+			this.o_scroll.setScroll(-ListUtil.indexOf(this.options, this.selected) * this.getHeight(), true);
+			this.o_hovering = null;
+		}
+		super.setFocused(focused);
+	}
+
+	public interface ChangeEvent<T> {
+		void onDropdownChange(int index, T value, DropdownComponent<T> component);
+	}
 }
