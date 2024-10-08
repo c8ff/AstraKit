@@ -1,16 +1,17 @@
 package dev.seeight.astrakit.box.util;
 
 import dev.seeight.astrakit.box.UIBoxContext;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Range;
 import org.lwjgl.glfw.GLFW;
 
 public class Scroll2 {
 	private final UIBoxContext i;
 
-	protected float scroll;
-	protected float animatedScroll;
+	protected float scroll = 0;
+	protected float animatedScroll = 0;
 
-	protected float size;
+	protected float size = 0;
 
 	protected double lastLoadedTime;
 	protected double reachBottomCoolDown = 1; // seconds (or the value of GLFW.glfwGetTime)
@@ -18,9 +19,12 @@ public class Scroll2 {
 	protected Runnable reachBottomEvent;
 	protected Runnable reachTopEvent;
 
+	/**
+	 * The size of the display. Depending on this being a horizontal scroll or vertical scroll. Width or height.
+	 */
 	protected float maxSize;
 
-	protected boolean wasInBounds;
+	protected boolean wasInBounds = true;
 
 	public Scroll2(UIBoxContext i) {
 		this.i = i;
@@ -34,16 +38,19 @@ public class Scroll2 {
 		this.maxSize = maxSize;
 	}
 
+	@Contract("_->this")
 	public Scroll2 setReachTopEvent(Runnable reachTopEvent) {
 		this.reachTopEvent = reachTopEvent;
 		return this;
 	}
 
+	@Contract("_->this")
 	public Scroll2 setReachBottomEvent(Runnable event) {
 		this.reachBottomEvent = event;
 		return this;
 	}
 
+	@Contract("_->this")
 	public Scroll2 setReachBottomCoolDown(double reachBottomCoolDown) {
 		this.reachBottomCoolDown = reachBottomCoolDown;
 		return this;
@@ -118,6 +125,19 @@ public class Scroll2 {
 
 		float newValue = (float) (diff * speed);
 		return value + newValue;
+	}
+
+	@Contract("_, _ -> this")
+	public Scroll2 setScroll(float scroll, boolean instant) {
+		if (scroll < maxSize - size) {
+			scroll = maxSize - size;
+		}
+
+		this.scroll = scroll;
+		if (instant) {
+			this.animatedScroll = scroll;
+		}
+		return this;
 	}
 
 	public interface FloatSupplier {
