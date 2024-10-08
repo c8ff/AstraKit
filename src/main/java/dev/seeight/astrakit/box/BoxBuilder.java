@@ -157,4 +157,8 @@ public class BoxBuilder {
 	public TextureBox texture(Texture texture, int size) {
 		return new TextureBox(context, texture, size);
 	}
+
+	public FillerBox filler() {
+		return new FillerBox();
+	}
 }
