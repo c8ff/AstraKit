@@ -3,6 +3,7 @@ package dev.seeight.astrakit.box.container;
 import dev.seeight.astrakit.box.UIBoxContext;
 import dev.seeight.astrakit.box.*;
 import dev.seeight.astrakit.box.impl.Dropdown;
+import dev.seeight.astrakit.box.impl.PrioritizedRenderComponent;
 import dev.seeight.astrakit.box.layout.Layout;
 import dev.seeight.astrakit.box.layout.Sizing;
 import dev.seeight.astrakit.box.util.ComponentColor;
@@ -16,7 +17,7 @@ import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 
-public class ParentBox extends ComponentBox {
+public class ParentBox extends ComponentBox implements PrioritizedRenderComponent {
 	final Layout layout;
 	final List<Component> children;
 	final List<Component> immutableChildren;
@@ -182,8 +183,6 @@ public class ParentBox extends ComponentBox {
 
 		if (isOutsideView(offsetX, offsetY)) return;
 
-		Dropdown dropdown = null;
-
 		boolean debugView = this.i.boxBoundView();
 
 		this.renderBackground(x, y);
@@ -194,11 +193,7 @@ public class ParentBox extends ComponentBox {
 				for (var box : this.children) {
 					box.render(x, y, alpha);
 
-					if (dropdown == null && box.isFocused() && box instanceof Dropdown b) {
-						dropdown = b;
-					}
-
-					if (debugView && !box.isOutsideView(x, y) && !(box instanceof ParentBox)) {
+					if (debugView && !box.isOutsideView(x, y) && !(box instanceof ParentBox || box instanceof CroppedBox)) {
 						this.renderer.color(0, 0, 1, alpha);
 						this.renderer.hollowRect2f(x + box.getX(), y + box.getY(), x + box.getX() + box.getWidth(), y + box.getY() + box.getHeight(), 1F);
 					}
@@ -208,12 +203,8 @@ public class ParentBox extends ComponentBox {
 		}
 
 		if (debugView) {
-			this.renderer.color(0, 1, 0, alpha * 0.25F);
-			this.renderer.hollowRect2f(x, y, x + this.getWidth(), y + this.getHeight(), 1F);
-		}
-
-		if (dropdown != null) {
-			dropdown.renderOver(x, y, alpha);
+			this.renderer.color(0, isFocused() ? 0.5F : 1, 0, alpha * 0.5F);
+			this.renderer.hollowRect2f(x + 1, y + 1, x - 1 + this.getWidth(), y - 1 + this.getHeight(), 1F);
 		}
 
 		if (this.border != null) {
@@ -228,6 +219,31 @@ public class ParentBox extends ComponentBox {
 			this.renderer.rect2f(x, y, x + this.getWidth(), y + this.getHeight());
 		}
 	}
+
+	@Override
+	public void renderOver(float offsetX, float offsetY, float alpha) {
+		float x = this.getX() + offsetX;
+		float y = this.getY() + offsetY;
+
+		if (isOutsideView(offsetX, offsetY)) return;
+
+		Dropdown dropdown = null;
+
+		for (var box : this.children) {
+			if (box instanceof PrioritizedRenderComponent pb) {
+				pb.renderOver(x, y, alpha);
+			} else if (box instanceof Dropdown b) {
+				if (dropdown == null && box.isFocused()) {
+					dropdown = b;
+				}
+			}
+		}
+
+		if (dropdown != null) {
+			dropdown.renderOver(x, y, alpha);
+		}
+	}
+
 
 	@Override
 	public ParentBox setSize(float width, float height) {
