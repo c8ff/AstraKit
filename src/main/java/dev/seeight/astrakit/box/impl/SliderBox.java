@@ -262,9 +262,9 @@ public class SliderBox extends ComponentBox implements PrioritizedRenderComponen
 			}
 		}
 
-		protected abstract T clamp(T value);
+		public abstract void setDouble(double value);
 
-		protected abstract void setDouble(double value);
+		protected abstract T clamp(T value);
 
 		public String asString() {
 			if (this.value instanceof Integer) {
@@ -288,7 +288,7 @@ public class SliderBox extends ComponentBox implements PrioritizedRenderComponen
 		}
 
 		@Override
-		protected void setDouble(double value) {
+		public void setDouble(double value) {
 			this.set((int) value);
 		}
 	}
@@ -304,7 +304,7 @@ public class SliderBox extends ComponentBox implements PrioritizedRenderComponen
 		}
 
 		@Override
-		protected void setDouble(double value) {
+		public void setDouble(double value) {
 			this.set((float) value);
 		}
 	}
