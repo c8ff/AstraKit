@@ -227,6 +227,10 @@ public class SliderBox extends ComponentBox implements PrioritizedRenderComponen
 		return 2;
 	}
 
+	public NumberVal<? extends Number> getValue() {
+		return value;
+	}
+
 	/**
 	 * Wrapper class to represent a changeable number within a range.
 	 */
