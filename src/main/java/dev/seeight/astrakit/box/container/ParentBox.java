@@ -20,6 +20,7 @@ public class ParentBox extends ComponentBox {
 	final List<Component> immutableChildren;
 
 	protected Border border;
+	protected ComponentColor background;
 
 	protected boolean compensateRenderOffset;
 	protected boolean automaticLayoutChange = true;
@@ -53,6 +54,11 @@ public class ParentBox extends ComponentBox {
 
 	public ParentBox setBorder(Border border) {
 		this.border = border;
+		return this;
+	}
+
+	public ParentBox setBackground(ComponentColor background) {
+		this.background = background;
 		return this;
 	}
 
@@ -178,6 +184,8 @@ public class ParentBox extends ComponentBox {
 
 		boolean debugView = this.i.boxBoundView();
 
+		this.renderBackground(x, y);
+
 		// Fuck you concurrent modification exception
 		while (true) {
 			try {
@@ -212,6 +220,12 @@ public class ParentBox extends ComponentBox {
 		}
 	}
 
+	private void renderBackground(float x, float y) {
+		if (this.background != null) {
+			this.renderer.color(this.background.r, this.background.g, this.background.b, this.background.a);
+			this.renderer.rect2f(x, y, x + this.getWidth(), y + this.getHeight());
+		}
+	}
 
 	@Override
 	public ParentBox setSize(float width, float height) {
