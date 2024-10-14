@@ -81,11 +81,14 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 	}
 
 	public DropdownComponent<T> set(T selected) {
+		var index = ListUtil.indexOf(this.options, selected);
+		if (index == -1) throw new IllegalArgumentException("New value not present in options.");
+
 		this.selected = selected;
 		if (changeEvent != null)
 			changeEvent.accept(selected);
 		if (itemChangeEvent != null)
-			itemChangeEvent.onDropdownChange(ListUtil.indexOf(this.options, selected), selected, this);
+			itemChangeEvent.onDropdownChange(index, selected, this);
 		return this;
 	}
 
