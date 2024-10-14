@@ -86,6 +86,40 @@ public class TextFieldComponent extends ComponentBox {
 	@Override
 	public boolean mouseEvent(int button, int action, int mods, double x, double y) {
 		if (isInside(x, y)) {
+			if (button == GLFW.GLFW_MOUSE_BUTTON_1 && action == GLFW.GLFW_PRESS) {
+				float cursorX = (float) (x - this.getX());
+				float textX = this.getX() + 10;
+
+				// Main text
+				char[] chars;
+				if (this.characters.isEmpty()) {
+					chars = new char[0];
+				} else {
+					chars = ReflectionUtil.conv(this.characters);
+				}
+
+				this.headIndex = this.characters.size();
+
+				if (cursorX < textX) {
+					this.headIndex = 0;
+				} else for (int j = 0; j < chars.length; j++) {
+					char c = chars[j];
+					float w = this.fontRenderer.getCharacterWidth(this.font, this.font.getCharacterData(c), c);
+					if (cursorX - textX < w / 2f) {
+						this.headIndex = j;
+						break;
+					} else if (cursorX - textX < w) {
+						this.headIndex = j + 1;
+						break;
+					}
+					textX += w;
+				}
+			}
+
+			return true;
+		}
+
+		if (this.isFocused() && action == GLFW.GLFW_RELEASE) {
 			return true;
 		}
 
