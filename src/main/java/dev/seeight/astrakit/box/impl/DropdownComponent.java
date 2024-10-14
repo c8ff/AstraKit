@@ -34,6 +34,10 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 	private final Scroll2 o_scroll;
 	private T o_hovering;
 
+	private boolean o_scrolling;
+	protected double o_scrollStartY;
+	protected final float o_scrollSensitivity = 250;
+
 	@SafeVarargs
 	public DropdownComponent(UIBoxContext i, IFont font, IFontRenderer fontRenderer, float margin, int selected, T... options) {
 		super(i);
@@ -130,6 +134,8 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 
 	@Override
 	public boolean mouseEvent(int button, int action, int mods, double x, double y) {
+		if (isFocused()) return true;
+
 		boolean b = this.isInside(x, y) && action == GLFW.GLFW_PRESS;
 		if (b) o_ignoreFirstClick = true;
 		return b;
@@ -142,16 +148,23 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 			return;
 		}
 
+		if (button == GLFW.GLFW_MOUSE_BUTTON_3) {
+			//noinspection AssignmentUsedAsCondition
+			if (this.o_scrolling = action != GLFW.GLFW_RELEASE) {
+				this.o_scrollStartY = this.i.getMouser().getY();
+			}
+		}
+
 		if (button == GLFW.GLFW_MOUSE_BUTTON_1 && action == GLFW.GLFW_RELEASE) {
 			float x0 = this.getX();
 			float y0 = this.o_scroll.get();
 			float optionHeight = this.getHeight();
-			float maxHeight = optionHeight * Math.min(this.o_maxElementDisplay, this.options.length);
+			float bgHeight = optionHeight * Math.min(this.o_maxElementDisplay, this.options.length);
 			
 			cursorY -= this.getY() + this.getHeight();
 
 			for (T option : this.options) {
-				if (y0 > maxHeight) break;
+				if (y0 > bgHeight) break;
 
 				if (y0 >= 0) {
 					if (cursorX > x0 && cursorY > y0 &&
@@ -211,9 +224,20 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 
 		float optionHeight = this.getHeight();
 		float width = this.getWidth();
-		float bgHeight = optionHeight * Math.min(this.options.length, this.o_maxElementDisplay);
+		float bgHeight = optionHeight * Math.min(this.o_maxElementDisplay, this.options.length);
+		if (y + bgHeight > this.i.getWindowHeight()) {
+			bgHeight = this.i.getWindowHeight() - y;
+		}
 
 		float y2 = y + bgHeight;
+
+		// Shared with CroppedBox
+		if (this.o_scrolling) {
+			double current = this.i.getMouser().getY();
+			double previous = o_scrollStartY;
+			double s = (previous - current) / o_scrollSensitivity * (this.i.getDeltaTime() * 20F);
+			this.o_scroll.onScrollEvent(s);
+		}
 
 		this.o_scroll.update();
 		this.o_scroll.setMaxSize(bgHeight);
@@ -241,7 +265,7 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 					this.renderer.color(1, 1, 1, alpha);
 				}
 
-				this.fontRenderer.drawString(this.font, getOptionStr(option), fontX, oy + fontOffsetY);
+				this.fontRenderer.drawString(this.font, getOptionStr(option), Math.round(fontX), Math.round(oy + fontOffsetY));
 			}
 			oy += optionHeight;
 		}
