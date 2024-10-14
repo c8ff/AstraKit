@@ -84,6 +84,8 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 		this.selected = selected;
 		if (changeEvent != null)
 			changeEvent.accept(selected);
+		if (itemChangeEvent != null)
+			itemChangeEvent.onDropdownChange(ListUtil.indexOf(this.options, selected), selected, this);
 		return this;
 	}
 
