@@ -2,15 +2,16 @@ package dev.seeight.astrakit.box.container;
 
 import dev.seeight.astrakit.box.ComponentBox;
 import dev.seeight.astrakit.box.UIBoxContext;
+import dev.seeight.astrakit.box.crop.ICropContext;
 import dev.seeight.astrakit.box.impl.PrioritizedRenderComponent;
 import dev.seeight.astrakit.box.layout.Axis;
 import dev.seeight.astrakit.box.layout.Sizing;
 import dev.seeight.astrakit.box.util.Scroll2;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.opengl.GL11;
 
 public class CroppedBox extends ComponentBox implements PrioritizedRenderComponent {
+	private final ICropContext cropContext;
 	protected final ParentBox child;
 	private final Axis axis;
 	private final Scroll2 scroll;
@@ -28,8 +29,9 @@ public class CroppedBox extends ComponentBox implements PrioritizedRenderCompone
 
 	protected float scrollSensitivity = 250;
 
-	public CroppedBox(UIBoxContext i, ParentBox child, Axis scrollAxis) {
+	public CroppedBox(ICropContext cropContext, UIBoxContext i, ParentBox child, Axis scrollAxis) {
 		super(i);
+		this.cropContext = cropContext;
 		this.child = child;
 		this.axis = scrollAxis;
 		this.scroll = new Scroll2(i);
@@ -95,13 +97,13 @@ public class CroppedBox extends ComponentBox implements PrioritizedRenderCompone
 		this.scroll.setSize(this.axis == Axis.HORIZONTAL ? Math.max(this.child.getWidth(), this.getWidth()) : Math.max(this.child.getHeight(), this.getHeight()));
 		this.scroll.setMaxSize(this.axis == Axis.HORIZONTAL ? this.getWidth() : this.getHeight());
 
-		this.activateCropping();
+		this.cropContext.startCropping(x, y, this.getWidth(), this.getHeight());
 		try {
 			this.child.render(x, py, alpha);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		this.disableCropping();
+		this.cropContext.stopCropping();
 
 		if (this.scrolling) {
 			this.renderer.color(1F, 1F, 1F, alpha);
@@ -238,14 +240,5 @@ public class CroppedBox extends ComponentBox implements PrioritizedRenderCompone
 
 	public ParentBox getChild() {
 		return child;
-	}
-
-	protected void activateCropping() {
-		GL11.glEnable(GL11.GL_SCISSOR_TEST);
-		GL11.glScissor((int) px, (int) (this.i.getWindowHeight() - py - this.getHeight()), (int) this.getWidth(), (int) this.getHeight());
-	}
-
-	protected void disableCropping() {
-		GL11.glDisable(GL11.GL_SCISSOR_TEST);
 	}
 }

@@ -2,6 +2,7 @@ package dev.seeight.astrakit.box.impl;
 
 import dev.seeight.astrakit.box.UIBoxContext;
 import dev.seeight.astrakit.box.ComponentBox;
+import dev.seeight.astrakit.box.crop.ICropContext;
 import dev.seeight.astrakit.box.util.Scroll2;
 import dev.seeight.common.lwjgl.font.IFont;
 import dev.seeight.common.lwjgl.fontrenderer.IFontRenderer;
@@ -16,6 +17,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class DropdownComponent<T> extends ComponentBox implements Dropdown {
+	private final ICropContext cropContext;
 	private final Texture dropdownTexture;
 
 	private @NotNull T @NotNull [] options;
@@ -39,9 +41,10 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 	protected final float o_scrollSensitivity = 250;
 
 	@SafeVarargs
-	public DropdownComponent(UIBoxContext i, IFont font, IFontRenderer fontRenderer, float margin, int selected, T... options) {
+	public DropdownComponent(UIBoxContext i, IFont font, IFontRenderer fontRenderer, float margin, ICropContext cropContext, int selected, T... options) {
 		super(i);
 		this.dropdownTexture = i.getBoxResources().getDropdownTexture();
+		this.cropContext = cropContext;
 		this.options = options;
 		this.selected = options[selected];
 
@@ -252,6 +255,8 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 		// Main text
 		this.renderer.color(1, 1, 1, alpha);
 
+		this.cropContext.startCropping(x, y, width, bgHeight);
+
 		float oy = y + o_scroll.get();
 		for (T option : this.options) {
 			if (oy + optionHeight > y && oy <= y2) {
@@ -269,6 +274,8 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 			}
 			oy += optionHeight;
 		}
+
+		this.cropContext.stopCropping();
 	}
 
 	private void renderOverBackground(float alpha, float x, float y, float width, float height) {

@@ -3,6 +3,8 @@ package dev.seeight.astrakit.box;
 import dev.seeight.astrakit.box.container.CroppedBox;
 import dev.seeight.astrakit.box.container.ParentBox;
 import dev.seeight.astrakit.box.container.TabBox;
+import dev.seeight.astrakit.box.crop.GenericOpenGLCropContext;
+import dev.seeight.astrakit.box.crop.ICropContext;
 import dev.seeight.astrakit.box.impl.*;
 import dev.seeight.astrakit.box.layout.Axis;
 import dev.seeight.astrakit.box.layout.Layout;
@@ -11,12 +13,16 @@ import dev.seeight.astrakit.box.layout.StackLayout;
 import dev.seeight.common.lwjgl.font.IFont;
 import dev.seeight.common.lwjgl.fontrenderer.IFontRenderer;
 import dev.seeight.renderer.renderer.Texture;
+import dev.seeight.renderer.renderer.gl.OpenGLRenderer2;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.lwjgl.opengl.GL;
 
 import java.awt.*;
 import java.util.function.Consumer;
 
 public class BoxBuilder {
+	protected final ICropContext cropContext;
 	protected final UIBoxContext context;
 
 	protected @NotNull IFont font;
@@ -25,11 +31,27 @@ public class BoxBuilder {
 	protected float margin = 10;
 	protected float tabLabelMargin = 14;
 
-	public BoxBuilder(UIBoxContext context, @NotNull IFont defaultFont, @NotNull IFontRenderer defaultFontRenderer) {
+	public BoxBuilder(UIBoxContext context, @Nullable ICropContext cropContext, @NotNull IFont defaultFont, @NotNull IFontRenderer defaultFontRenderer) {
 		this.context = context;
-
 		this.font = defaultFont;
 		this.fontRenderer = defaultFontRenderer;
+
+		if (cropContext == null) {
+			try {
+				boolean invertedY = true;
+				if (this.context.getRenderer() instanceof OpenGLRenderer2 s) {
+					invertedY = s.INVERT_V_COORDINATES;
+				}
+
+				// Will throw if the current thread doesn't have an OpenGL context.
+				GL.getCapabilities();
+				this.cropContext = new GenericOpenGLCropContext(context, invertedY);
+			} catch (Exception e) {
+				throw new RuntimeException("No crop context implementation available.");
+			}
+		} else {
+			this.cropContext = cropContext;
+		}
 	}
 
 	public BoxBuilder setFont(@NotNull IFont font) {
@@ -60,7 +82,7 @@ public class BoxBuilder {
 			axis = Axis.HORIZONTAL;
 		}
 
-		return new CroppedBox(context, box, axis);
+		return new CroppedBox(cropContext, context, box, axis);
 	}
 
 	public TabBox tabs(TabBox.Tab... tabs) {
@@ -115,7 +137,7 @@ public class BoxBuilder {
 
 	@SafeVarargs
 	public final <T> DropdownComponent<T> dropdown(int i, T... values) {
-		return new DropdownComponent<>(context, font, fontRenderer, margin, i, values);
+		return new DropdownComponent<>(context, font, fontRenderer, margin, cropContext, i, values);
 	}
 
 	public ComponentBox checkbox(String string, boolean value, CheckBox.ChangeEvent changeEvent) {
