@@ -121,7 +121,7 @@ public class CroppedBox extends ComponentBox implements PrioritizedRenderCompone
 
 	@Override
 	public boolean mouseEvent(int button, int action, int mods, double x, double y) {
-		if (this.scrolling && button == GLFW.GLFW_MOUSE_BUTTON_3) {
+		if (this.scrolling && button == GLFW.GLFW_MOUSE_BUTTON_3 && action == GLFW.GLFW_RELEASE) {
 			this.scrollPositionX = -1;
 			this.scrollPositionY = -1;
 			this.scrolling = false;
@@ -130,27 +130,9 @@ public class CroppedBox extends ComponentBox implements PrioritizedRenderCompone
 		}
 
 		if (this.compensateRenderOffset) {
-			// Scroll
-			if (button == GLFW.GLFW_MOUSE_BUTTON_3 && action == GLFW.GLFW_PRESS) {
-				this.scrollPositionX = this.i.getMouser().getX();
-				this.scrollPositionY = this.i.getMouser().getY();
-				this.scrolling = true;
-				this.setFocused(true);
-				return true;
-			}
-
 			if (!isInside(x - this.offsetX, y - this.offsetY) && !this.isFocused()) return false;
 		} else {
 			if (!isInside(x, y) && !this.isFocused()) return false;
-
-			// Scroll
-			if (button == GLFW.GLFW_MOUSE_BUTTON_3 && action == GLFW.GLFW_PRESS) {
-				this.scrollPositionX = this.i.getMouser().getX();
-				this.scrollPositionY = this.i.getMouser().getY();
-				this.scrolling = true;
-				this.setFocused(true);
-				return true;
-			}
 		}
 
 		if (this.compensateRenderOffset) {
@@ -168,6 +150,15 @@ public class CroppedBox extends ComponentBox implements PrioritizedRenderCompone
 		}
 
 		boolean b = child.mouseEvent(button, action, mods, x, y);
+
+		if (!b && button == GLFW.GLFW_MOUSE_BUTTON_3 && action == GLFW.GLFW_PRESS) {
+			this.scrollPositionX = this.i.getMouser().getX();
+			this.scrollPositionY = this.i.getMouser().getY();
+			this.scrolling = true;
+			this.setFocused(true);
+			return true;
+		}
+
 		this.setFocused(b);
 		return b;
 	}
