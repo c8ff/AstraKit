@@ -72,6 +72,14 @@ public class BoxBuilder {
 		}
 	}
 
+	public ICropContext getCropContext() {
+		return cropContext;
+	}
+
+	public UIBoxContext getContext() {
+		return context;
+	}
+
 	public BoxBuilder setFont(@NotNull IFont font) {
 		this.font = font;
 		return this;
