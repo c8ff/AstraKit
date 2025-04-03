@@ -25,6 +25,7 @@ import dev.seeight.common.lwjgl.fontrenderer.BufferedFontRenderer;
 import dev.seeight.common.lwjgl.fontrenderer.IFontRenderer;
 import dev.seeight.common.lwjgl.util.StringWrapper;
 
+import java.awt.*;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
@@ -109,6 +110,10 @@ public class WrappedTextBox extends ComponentBox {
 		this.g = g;
 		this.b = b;
 		return this;
+	}
+
+	public WrappedTextBox setColor(Color color) {
+		return this.setColor(color.getRed() / 255D, color.getGreen() / 255D, color.getBlue() / 255D);
 	}
 
 	@Override
