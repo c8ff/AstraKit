@@ -72,6 +72,10 @@ public class CheckBox extends ComponentBox {
 				this.animation = Scroll2.animate(this.animation, 0, this.i.getDeltaTime() * 250F);
 			}
 
+			if (Float.isNaN(this.animation) || Float.isInfinite(this.animation) || this.animation < 0 || this.animation > 255) {
+				this.animation = this.value ? 255 : 0;
+			}
+
 			float anim = this.animation / 255F;
 			float anim0 = 1F - anim;
 
