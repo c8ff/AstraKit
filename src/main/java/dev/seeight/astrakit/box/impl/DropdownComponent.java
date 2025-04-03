@@ -49,6 +49,8 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 	private Consumer<T> changeEvent;
 	private ChangeEvent<T> itemChangeEvent;
 
+	protected boolean disabled = false;
+
 	private boolean o_ignoreFirstClick = false;
 	private final int o_maxElementDisplay = 20;
 	private final Scroll2 o_scroll;
@@ -89,34 +91,6 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 		this.o_scroll = new Scroll2(i);
 	}
 
-	public DropdownComponent<T> setRenderStringGet(Function<T, char[]> renderStringGet) {
-		this.renderStringGet = renderStringGet;
-		return this;
-	}
-
-	@Deprecated
-	public DropdownComponent<T> setChangeEvent(Consumer<T> changeEvent) {
-		this.changeEvent = changeEvent;
-		return this;
-	}
-
-	public DropdownComponent<T> setItemChangeEvent(ChangeEvent<T> ev) {
-		this.itemChangeEvent = ev;
-		return this;
-	}
-
-	public DropdownComponent<T> set(T selected) {
-		var index = ListUtil.indexOf(this.options, selected);
-		if (index == -1) throw new IllegalArgumentException("New value not present in options.");
-
-		this.selected = selected;
-		if (changeEvent != null)
-			changeEvent.accept(selected);
-		if (itemChangeEvent != null)
-			itemChangeEvent.onDropdownChange(index, selected, this);
-		return this;
-	}
-
 	@Override
 	public void render(float offsetX, float offsetY, float alpha) {
 		if (isOutsideView(offsetX, offsetY)) return;
@@ -134,7 +108,7 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 		float fontY = (float) Math.floor(y + (this.getHeight() - fontHeight) / 2f + 1F);
 
 		// Main text
-		this.renderer.color(1, 1, 1, alpha);
+		if (this.disabled) this.renderer.color(0.25F, 0.25F, 0.25F, alpha); else this.renderer.color(1, 1, 1, alpha);
 		this.fontRenderer.drawString(font, getOptionStr(this.selected), fontX, fontY);
 
 		// Dropdown icon
@@ -145,7 +119,9 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 	}
 
 	protected void renderBackground(float x, float y, float width, float height, float alpha) {
-		if (this.isFocused()) {
+		if (this.disabled) {
+			this.renderer.color(0.0625F, 0.0625F, 0.0625F, alpha);
+		} else if (this.isFocused()) {
 			this.renderer.color(0.10F, 0.10F, 0.10F, alpha);
 		} else {
 			this.renderer.color(0.20F, 0.20F, 0.20F, alpha);
@@ -155,6 +131,11 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 
 	@Override
 	public boolean mouseEvent(int button, int action, int mods, double x, double y) {
+		if (this.disabled) {
+			this.setFocused(false);
+			return false;
+		}
+
 		if (isFocused()) return true;
 
 		boolean b = this.isInside(x, y) && action == GLFW.GLFW_PRESS;
@@ -164,6 +145,10 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 
 	@Override
 	public void mouseEventOver(int button, int action, double cursorX, double cursorY) {
+		if (this.disabled) {
+			this.setFocused(false);
+			return;
+		}
 		if (o_ignoreFirstClick && action == GLFW.GLFW_RELEASE) {
 			o_ignoreFirstClick = false;
 			return;
@@ -205,6 +190,7 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 
 	@Override
 	public void cursorPosition(double x, double y) {
+		if (this.disabled) return;
 		if (this.isFocused()) {
 			float x0 = 0;
 			float y0 = this.o_scroll.get();
@@ -227,15 +213,9 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 
 	@Override
 	public void scrollOver(double x, double y) {
-		this.o_scroll.onScrollEvent(y);
-	}
+		if (this.disabled) return;
 
-	private void setSelected(T selected) {
-		this.selected = selected;
-		if (changeEvent != null)
-			changeEvent.accept(this.selected);
-		if (itemChangeEvent != null)
-			itemChangeEvent.onDropdownChange(ListUtil.indexOf(this.options, this.selected), this.selected, this);
+		this.o_scroll.onScrollEvent(y);
 	}
 
 	@Override
@@ -296,6 +276,15 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 		this.cropContext.stopCropping();
 	}
 
+	@Override
+	public void setFocused(boolean focused) {
+		if (focused) {
+			this.o_scroll.setScroll(-ListUtil.indexOf(this.options, this.selected) * this.getHeight(), true);
+			this.o_hovering = null;
+		}
+		super.setFocused(focused);
+	}
+
 	private void renderOverBackground(float alpha, float x, float y, float width, float height) {
 		this.renderer.color(0.20F, 0.20F, 0.20F, alpha);
 		this.renderer.rect2f(x, y, x + width, y + height);
@@ -307,6 +296,42 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 		}
 
 		return o.toString().toCharArray();
+	}
+
+	public DropdownComponent<T> setRenderStringGet(Function<T, char[]> renderStringGet) {
+		this.renderStringGet = renderStringGet;
+		return this;
+	}
+
+	@Deprecated
+	public DropdownComponent<T> setChangeEvent(Consumer<T> changeEvent) {
+		this.changeEvent = changeEvent;
+		return this;
+	}
+
+	public DropdownComponent<T> setItemChangeEvent(ChangeEvent<T> ev) {
+		this.itemChangeEvent = ev;
+		return this;
+	}
+
+	public DropdownComponent<T> set(T selected) {
+		var index = ListUtil.indexOf(this.options, selected);
+		if (index == -1) throw new IllegalArgumentException("New value not present in options.");
+
+		this.selected = selected;
+		if (changeEvent != null)
+			changeEvent.accept(selected);
+		if (itemChangeEvent != null)
+			itemChangeEvent.onDropdownChange(index, selected, this);
+		return this;
+	}
+
+	private void setSelected(T selected) {
+		this.selected = selected;
+		if (changeEvent != null)
+			changeEvent.accept(this.selected);
+		if (itemChangeEvent != null)
+			itemChangeEvent.onDropdownChange(ListUtil.indexOf(this.options, this.selected), this.selected, this);
 	}
 
 	public T getSelected() {
@@ -330,13 +355,12 @@ public class DropdownComponent<T> extends ComponentBox implements Dropdown {
 		return this;
 	}
 
-	@Override
-	public void setFocused(boolean focused) {
-		if (focused) {
-			this.o_scroll.setScroll(-ListUtil.indexOf(this.options, this.selected) * this.getHeight(), true);
-			this.o_hovering = null;
-		}
-		super.setFocused(focused);
+	public boolean isDisabled() {
+		return disabled;
+	}
+
+	public void setDisabled(boolean disabled) {
+		this.disabled = disabled;
 	}
 
 	public interface ChangeEvent<T> {
