@@ -136,7 +136,11 @@ public class CroppedBox extends ComponentBox implements PrioritizedRenderCompone
 
 	@Override
 	public void renderOver(float offsetX, float offsetY, float alpha) {
-		this.child.renderOver(offsetX + this.getX(), offsetY + this.getY(), alpha);
+		if (axis == Axis.HORIZONTAL) {
+			this.child.renderOver(offsetX + this.getX() + this.scroll.get(), offsetY + this.getY(), alpha);
+		} else {
+			this.child.renderOver(offsetX + this.getX(), offsetY + this.getY() + this.scroll.get(), alpha);
+		}
 	}
 
 	@Override
